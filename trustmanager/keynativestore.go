@@ -37,7 +37,6 @@ func (k *KeyNativeStore) AddKey(keyInfo KeyInfo, privKey data.PrivateKey) error 
 	secretByte:=base64.StdEncoding.EncodeToString(pemPrivKey)
 	keyCredentials:=credentials.Credentials{
 		ServerURL:privKey.ID(),
-		//"|" is a blacklist character to seperate the GUN and the Role and notary_key is just used to identify to the user that this is from notary
 		Username:keyInfo.Gun+"<notary_key>"+keyInfo.Role,
 		Secret:secretByte,
 	}
