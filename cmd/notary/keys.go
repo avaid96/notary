@@ -18,6 +18,7 @@ import (
 	"github.com/docker/notary/tuf/data"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/docker/notary/passphrase"
 )
 
 var cmdKeyTemplate = usageTemplate{
@@ -142,7 +143,7 @@ func (k *keyCommander) keysList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -183,7 +184,7 @@ func (k *keyCommander) keysGenerateRootKey(cmd *cobra.Command, args []string) er
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, true)
+	ks, err := k.getKeyStores(config, true, true, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,7 @@ func (k *keyCommander) keysBackup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, false, false)
+	ks, err := k.getKeyStores(config, false, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -258,7 +259,7 @@ func (k *keyCommander) keysExport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -302,7 +303,7 @@ func (k *keyCommander) keysRestore(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -333,7 +334,7 @@ func (k *keyCommander) keysImport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -425,7 +426,7 @@ func (k *keyCommander) keysRotate(cmd *cobra.Command, args []string) error {
 
 	nRepo, err := notaryclient.NewNotaryRepository(
 		config.GetString("trust_dir"), gun, getRemoteTrustServer(config),
-		rt, k.getRetriever(), trustPin)
+		rt, k.getRetriever(), trustPin, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -521,7 +522,7 @@ func (k *keyCommander) keyRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -548,7 +549,7 @@ func (k *keyCommander) keyPassphraseChange(cmd *cobra.Command, args []string) er
 	if err != nil {
 		return err
 	}
-	ks, err := k.getKeyStores(config, true, false)
+	ks, err := k.getKeyStores(config, true, false, getUseNative(config))
 	if err != nil {
 		return err
 	}
@@ -604,7 +605,7 @@ func (k *keyCommander) keyPassphraseChange(cmd *cobra.Command, args []string) er
 }
 
 func (k *keyCommander) getKeyStores(
-	config *viper.Viper, withHardware, hardwareBackup bool) ([]trustmanager.KeyStore, error) {
+	config *viper.Viper, withHardware, hardwareBackup, useNative bool) ([]trustmanager.KeyStore, error) {
 	retriever := k.getRetriever()
 
 	directory := config.GetString("trust_dir")
@@ -613,9 +614,15 @@ func (k *keyCommander) getKeyStores(
 		return nil, fmt.Errorf(
 			"Failed to create private key store in directory: %s", directory)
 	}
-
 	ks := []trustmanager.KeyStore{fileKeyStore}
-
+	if useNative {
+		nativeKeyStore, err := trustmanager.NewKeyNativeStore(passphrase.PromptRetriever())
+		if err == nil {
+			// Note that the order is important, since we want to prioritize
+			// the native key store
+			ks = append([]trustmanager.KeyStore{nativeKeyStore}, ks...)
+		}
+	}
 	if withHardware {
 		var yubiStore trustmanager.KeyStore
 		if hardwareBackup {
@@ -625,10 +632,9 @@ func (k *keyCommander) getKeyStores(
 		}
 		if err == nil && yubiStore != nil {
 			// Note that the order is important, since we want to prioritize
-			// the yubikey store
-			ks = []trustmanager.KeyStore{yubiStore, fileKeyStore}
+			// the yubi key store
+			ks=append([]trustmanager.KeyStore{yubiStore},ks...)
 		}
 	}
-
 	return ks, nil
 }

@@ -8,22 +8,27 @@ import (
 	"github.com/docker/notary/tuf/data"
 	"strings"
 	"fmt"
+	"github.com/docker/notary"
+	//"os/exec"
+	//"regexp"
 )
 
 // KeyNativeStore is an implementation of Storage that keeps
 // the contents in the keychain access.
 type KeyNativeStore struct {
+	notary.PassRetriever
 	newProgFunc client.ProgramFunc
 }
 
 // NewKeyNativeStore creates a KeyNativeStore
-func NewKeyNativeStore(machineCredsStore string) (*KeyNativeStore, error) {
+func NewKeyNativeStore(passphraseRetriever notary.PassRetriever) (*KeyNativeStore, error) {
 	if defaultCredentialsStore=="" {
 		return nil, errors.New("Native storage on your operating system is not yet supported")
 	}
 	credCommand:="docker-credential-"+defaultCredentialsStore
 	x:=client.NewShellProgramFunc(credCommand)
 	return &KeyNativeStore{
+		PassRetriever: passphraseRetriever,
 		newProgFunc:x,
 	}, nil
 }
@@ -65,17 +70,27 @@ func (k *KeyNativeStore) GetKeyInfo(keyID string) (KeyInfo, error) {
 	if err!=nil {
 		return KeyInfo{}, err
 	}
-	keyinfo:=strings.SplitAfter(gotCredentials.Username, "<notary_key>")
-	gun:=keyinfo[0][:(len(keyinfo[0])-12)]
-	return KeyInfo{
+	if strings.Contains(gotCredentials.Username, "<notary_key>") {
+		keyinfo := strings.SplitAfter(gotCredentials.Username, "<notary_key>")
+		gun := keyinfo[0][:(len(keyinfo[0])-12)]
+		return KeyInfo{
 		Gun: gun,
 		Role: keyinfo[1],
-	}, err
+		}, err
+	}
+	return KeyInfo{}, fmt.Errorf("The keyID doesn't belong to a Notary key")
 }
 
 // ListKeys lists all the Keys inside of a native store
 // Just a placeholder for now- returns an empty slice
 func (k *KeyNativeStore) ListKeys() map[string]KeyInfo {
+	//if defaultCredentialsStore=="osxkeychain" {
+	//	out, _ := exec.Command("security","dump").Output()
+	//	output:=string(out)
+	//	re := regexp.MustCompile(".*<notary_key>.*")
+	//	keys:=re.FindAllString(output,-1)
+	//	fmt.Println(keys)
+	//}
 	return nil
 }
 
@@ -87,9 +102,33 @@ func (k *KeyNativeStore) RemoveKey(keyID string) error {
 
 //ExportKey removes a KeyChain from the keychain access store as an encrypted byte string
 func (k *KeyNativeStore) ExportKey(keyID string) ([]byte, error) {
-	//What passphrase should we encrypt it with before exporting the key?
-	//Just a place-holder for now
-	return []byte{},nil
+	serverName:=keyID
+	gotKey, role, err:= k.GetKey(serverName)
+	if err!=nil {
+		return nil, err
+	}
+	// take in a passphrase with the given retriever
+	var (
+		chosenPassphrase string
+		giveup           bool
+	)
+
+	for attempts := 0; ; attempts++ {
+		chosenPassphrase, giveup, err = k.PassRetriever(keyID, role, true, attempts)
+		if giveup {
+			return nil, errors.New("Given up")
+		}
+		if attempts > 3 {
+			return nil, errors.New("Exceeded attempts, please select a secure passphrase and type it with care")
+		}
+		if err != nil {
+			continue
+		}
+		break
+	}
+	// encrypt the byte string
+	encSecret, err:=EncryptPrivateKey(gotKey, role, chosenPassphrase)
+	return encSecret, err
 }
 
 // Name returns a user friendly name for the location this store
