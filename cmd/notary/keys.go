@@ -455,11 +455,20 @@ func removeKeyInteractively(keyStores []trustmanager.KeyStore, keyID string,
 	var storesByIndex []trustmanager.KeyStore
 
 	for _, store := range keyStores {
-		for keypath, keyInfo := range store.ListKeys() {
-			if filepath.Base(keypath) == keyID {
+		if strings.Contains(store.Name(), "Native keychain store") {
+			gotKeyInfo, err := store.GetKeyInfo(keyID)
+			if err==nil {
 				foundKeys = append(foundKeys,
-					[]string{keypath, keyInfo.Role, store.Name()})
+					[]string{keyID, gotKeyInfo.Role, store.Name()})
 				storesByIndex = append(storesByIndex, store)
+			}
+		} else {
+			for keypath, keyInfo := range store.ListKeys() {
+				if filepath.Base(keypath) == keyID {
+					foundKeys = append(foundKeys,
+						[]string{keypath, keyInfo.Role, store.Name()})
+					storesByIndex = append(storesByIndex, store)
+				}
 			}
 		}
 	}
@@ -502,11 +511,9 @@ func removeKeyInteractively(keyStores []trustmanager.KeyStore, keyID string,
 		fmt.Fprintln(out, "\nAborting action.")
 		return nil
 	}
-
 	if err := storesByIndex[0].RemoveKey(foundKeys[0][0]); err != nil {
 		return err
 	}
-
 	fmt.Fprintf(out, "\nDeleted %s.\n", keyDescription)
 	return nil
 }

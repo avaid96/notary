@@ -38,11 +38,10 @@ func (cs *CryptoService) ExportKey(dest io.Writer, keyID, role string) error {
 		pemBytes []byte
 		err      error
 	)
-
 	for _, ks := range cs.keyStores {
 		pemBytes, err = ks.ExportKey(keyID)
-		if err != nil {
-			continue
+		if err == nil {
+			break
 		}
 	}
 	if err != nil {
