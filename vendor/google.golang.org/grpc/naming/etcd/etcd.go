@@ -38,6 +38,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/naming"
 )
+
 // update defines an etcd key-value update.
 type update struct {
 	key, val string

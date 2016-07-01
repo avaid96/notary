@@ -4,12 +4,12 @@ package client
 
 import (
 	"fmt"
-	"net/http"
-	"github.com/docker/notary/passphrase"
 	"github.com/docker/notary"
+	"github.com/docker/notary/passphrase"
 	"github.com/docker/notary/trustmanager"
 	"github.com/docker/notary/trustmanager/yubikey"
 	"github.com/docker/notary/trustpinning"
+	"net/http"
 )
 
 // NewNotaryRepository is a helper method that returns a new notary repository.
@@ -37,7 +37,7 @@ func NewNotaryRepository(baseDir, gun, baseURL string, rt http.RoundTripper,
 	if yubiKeyStore != nil {
 		// Note that the order is important, since we want to prioritize
 		// the yubi key store
-		keyStores=append([]trustmanager.KeyStore{yubiKeyStore},keyStores...)
+		keyStores = append([]trustmanager.KeyStore{yubiKeyStore}, keyStores...)
 	}
 
 	return repositoryFromKeystores(baseDir, gun, baseURL, rt, keyStores, trustPinning)

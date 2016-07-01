@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/docker/notary"
+	"github.com/docker/notary/passphrase"
 	"github.com/docker/notary/trustmanager"
 	"github.com/docker/notary/trustpinning"
-	"github.com/docker/notary/passphrase"
 )
 
 // NewNotaryRepository is a helper method that returns a new notary repository.
@@ -24,7 +24,7 @@ func NewNotaryRepository(baseDir, gun, baseURL string, rt http.RoundTripper,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create private key store in directory: %s", baseDir)
 	}
-	keyStores:=[]trustmanager.KeyStore{fileKeyStore}
+	keyStores := []trustmanager.KeyStore{fileKeyStore}
 	if UseNative {
 		nativeKeyStore, err := trustmanager.NewKeyNativeStore(passphrase.ConstantRetriever("password"))
 		if err == nil {

@@ -15,10 +15,10 @@ import (
 	"github.com/docker/notary/trustmanager"
 
 	"github.com/docker/notary"
+	"github.com/docker/notary/passphrase"
 	"github.com/docker/notary/tuf/data"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/docker/notary/passphrase"
 )
 
 var cmdKeyTemplate = usageTemplate{
@@ -457,7 +457,7 @@ func removeKeyInteractively(keyStores []trustmanager.KeyStore, keyID string,
 	for _, store := range keyStores {
 		if strings.Contains(store.Name(), "Native keychain store") {
 			gotKeyInfo, err := store.GetKeyInfo(keyID)
-			if err==nil {
+			if err == nil {
 				foundKeys = append(foundKeys,
 					[]string{keyID, gotKeyInfo.Role, store.Name()})
 				storesByIndex = append(storesByIndex, store)
@@ -640,7 +640,7 @@ func (k *keyCommander) getKeyStores(
 		if err == nil && yubiStore != nil {
 			// Note that the order is important, since we want to prioritize
 			// the yubi key store
-			ks=append([]trustmanager.KeyStore{yubiStore},ks...)
+			ks = append([]trustmanager.KeyStore{yubiStore}, ks...)
 		}
 	}
 	return ks, nil
