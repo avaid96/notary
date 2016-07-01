@@ -639,7 +639,7 @@ func (k *keyCommander) getKeyStores(
 		}
 		if err == nil && yubiStore != nil {
 			// Note that the order is important, since we want to prioritize
-			// the yubi key store
+			// the yubikey store
 			ks = append([]trustmanager.KeyStore{yubiStore}, ks...)
 		}
 	}
