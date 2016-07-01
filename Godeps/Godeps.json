@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/docker/notary",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v71",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -230,6 +230,16 @@
 			"ImportPath": "github.com/docker/distribution/uuid",
 			"Comment": "v2.2.1-20-gc56d49b",
 			"Rev": "c56d49b111aea675a81d411c2db1acfac6179de9"
+		},
+		{
+			"ImportPath": "github.com/docker/docker-credential-helpers/client",
+			"Comment": "v0.3.0",
+			"Rev": "5128fa1badf763ad9e1e4bfb5990a693b854178c"
+		},
+		{
+			"ImportPath": "github.com/docker/docker-credential-helpers/credentials",
+			"Comment": "v0.3.0",
+			"Rev": "5128fa1badf763ad9e1e4bfb5990a693b854178c"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/system",
