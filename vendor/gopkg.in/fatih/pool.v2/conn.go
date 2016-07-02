@@ -6,7 +6,7 @@ import "net"
 // net.Conn's Close() method.
 type PoolConn struct {
 	net.Conn
-	c        *channelPool
+	c          *channelPool
 	unusable bool
 }
 
