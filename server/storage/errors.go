@@ -20,6 +20,12 @@ func (err ErrNotFound) Error() string {
 	return fmt.Sprintf("No record found")
 }
 
+type ErrInvalidVersion struct{}
+
+func (err ErrInvalidVersion) Error() string {
+	return fmt.Sprint("Invalid version requested")
+}
+
 // ErrKeyExists is returned when a key already exists
 type ErrKeyExists struct {
 	gun  string

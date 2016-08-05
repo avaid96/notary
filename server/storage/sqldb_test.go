@@ -376,4 +376,5 @@ func TestSQLTUFMetaStoreGetCurrent(t *testing.T) {
 	defer cleanup()
 
 	testTUFMetaStoreGetCurrent(t, dbStore)
+	require.False(t, true)
 }

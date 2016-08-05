@@ -134,6 +134,31 @@ func (st *MemStorage) GetCurrent(gun, role string) (*time.Time, []byte, error) {
 	return &(space[len(space)-1].createupdate), space[len(space)-1].data, nil
 }
 
+// GetVersion returns the createupdate date metadata for a given role, under a GUN.
+func (st *MemStorage) GetVersion(gun, role string, version int) (*time.Time, []byte, error) {
+	id := entryKey(gun, role)
+	st.lock.Lock()
+	defer st.lock.Unlock()
+	space, ok := st.tufMeta[id]
+	if !ok || len(space) == 0 {
+		return nil, nil, ErrNotFound{}
+	}
+	if version < 0 {
+		return nil, nil, ErrInvalidVersion{}
+	}
+	var targetVersion ver
+	targetVersion.version = -1
+	for _, stuff := range space {
+		if stuff.version == version {
+			targetVersion = stuff
+		}
+	}
+	if targetVersion.version != version {
+		return nil, nil, ErrNotFound{}
+	}
+	return &(targetVersion.createupdate), targetVersion.data, nil
+}
+
 // GetChecksum returns the createupdate date and metadata for a given role, under a GUN.
 func (st *MemStorage) GetChecksum(gun, role, checksum string) (*time.Time, []byte, error) {
 	st.lock.Lock()

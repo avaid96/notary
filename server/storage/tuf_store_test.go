@@ -6,6 +6,7 @@ import (
 	"github.com/docker/notary/tuf/data"
 	"github.com/docker/notary/tuf/testutils"
 	"github.com/stretchr/testify/require"
+	"fmt"
 )
 
 // Produce a series of tufMeta objects and updates given a TUF repo
@@ -72,6 +73,7 @@ func testTUFMetaStoreGetCurrent(t *testing.T, s MetaStore) {
 	}
 	require.NoError(t, s.UpdateMany(gun, updates))
 	_, _, err = s.GetCurrent(gun, data.CanonicalSnapshotRole)
+	fmt.Println(s.GetVersion(gun, data.CanonicalSnapshotRole, 0))
 	require.IsType(t, ErrNotFound{}, err)
 
 	// GetCurrent on all roles should still succeed - snapshot lookup because of caching,

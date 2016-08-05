@@ -121,7 +121,20 @@ func (db *SQLStorage) UpdateMany(gun string, updates []MetaUpdate) error {
 func (db *SQLStorage) GetCurrent(gun, tufRole string) (*time.Time, []byte, error) {
 	var row TUFFile
 	q := db.Select("updated_at, data").Where(
-		&TUFFile{Gun: gun, Role: tufRole}).Order("version desc").Limit(1).First(&row)
+		&TUFFile{Gun: gun, Role: tufRole, Version: 0}).Order("version desc").Limit(1).First(&row)
+	if err := isReadErr(q, row); err != nil {
+		return nil, nil, err
+	}
+	return &(row.UpdatedAt), row.Data, nil
+}
+
+// GetVersion returns the createupdate date metadata for a given role, under a GUN.
+func (db *SQLStorage) GetVersion(gun, tufRole string, version int) (*time.Time, []byte, error) {
+	var row TUFFile
+	q := db.Select("updated_at, data").Where(
+		&TUFFile{Gun: gun, Role: tufRole, Version: version}).Order("version desc").Limit(1).First(&row)
+	fmt.Println(string(row.Data))
+	fmt.Println("-----", row.Version)
 	if err := isReadErr(q, row); err != nil {
 		return nil, nil, err
 	}

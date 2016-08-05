@@ -31,6 +31,12 @@ type MetaStore interface {
 	// the given GUN and role, an error is returned.
 	GetCurrent(gun, tufRole string) (created *time.Time, data []byte, err error)
 
+	// GetVersion returns the modification date and data part of the metadata for
+	// the version that you specify for a collection with the given GUN and role.
+	// If there is no data for the given version of the collection specified,
+	// an error is returned
+	GetVersion(gun, role string, version int) (*time.Time, []byte, error)
+
 	// GetChecksum returns the given TUF role file and creation date for the
 	// GUN with the provided checksum. If the given (gun, role, checksum) are
 	// not found, it returns storage.ErrNotFound

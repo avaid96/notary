@@ -83,6 +83,17 @@ func TestGetCurrent(t *testing.T) {
 	_, d, err := s.GetCurrent("gun", "role")
 	require.Nil(t, err, "Expected error to be nil")
 	require.Equal(t, []byte("test"), d, "Data was incorrect")
+	s.UpdateCurrent("gun", MetaUpdate{"role", 2, []byte("testing")})
+	_, d, err = s.GetVersion("gun", "role", 9)
+	require.Error(t, err)
+	require.Nil(t, d)
+	_, d, err = s.GetVersion("gun", "role", 1)
+	require.NoError(t, err)
+	require.Equal(t, []byte("test"), d, "Data was incorrect")
+	_, d, err = s.GetVersion("gun", "role", 2)
+	require.NoError(t, err)
+	require.Equal(t, []byte("testing"), d, "Data was incorrect")
+	require.True(t, false)
 }
 
 func TestGetTimestampKey(t *testing.T) {
