@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"bytes"
+	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/registry/client/auth"
@@ -27,6 +29,7 @@ import (
 	"github.com/docker/notary/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/docker/docker-credential-helpers/credentials"
 )
 
 var cmdTUFListTemplate = usageTemplate{
@@ -707,8 +710,26 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 	if ps.anonymous {
 		return "", ""
 	}
-
 	stdin := bufio.NewReader(os.Stdin)
+
+	// hijack this function here, check if we have credentials in our native store and use them if they exist
+	buf := strings.NewReader(u.String())
+	out := new(bytes.Buffer)
+	err := credentials.Get(helper, buf, out)
+	outBytes := out.Bytes()
+	if err == nil {
+		gotCredentials := &credentials.Credentials{
+			ServerURL: u.String(),
+		}
+		err = json.NewDecoder(bytes.NewReader(outBytes)).Decode(gotCredentials)
+		if err == nil {
+			username := gotCredentials.Username
+			password := gotCredentials.Secret
+			fmt.Println(username, ": ", password)
+			return username, password
+		}
+	}
+
 	fmt.Fprintf(os.Stdout, "Enter username: ")
 
 	userIn, err := stdin.ReadBytes('\n')
@@ -727,6 +748,15 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 		return "", ""
 	}
 	password := strings.TrimSpace(string(passphrase))
+
+	// store these credentials
+	keyCredentials := credentials.Credentials{
+		ServerURL: u.String(),
+		Username: username,
+		Secret:   password,
+	}
+	b, err := json.Marshal(keyCredentials)
+	err = credentials.Store(helper, bytes.NewReader(b))
 
 	return username, password
 }
