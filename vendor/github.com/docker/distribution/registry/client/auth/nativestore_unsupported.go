@@ -1,5 +1,5 @@
 // +build !windows,!darwin,!linux
 
-package main
+package auth
 
 const defaultCredentialsStore = ""

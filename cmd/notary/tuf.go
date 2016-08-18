@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -12,12 +14,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"bytes"
-	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/distribution/registry/client/transport"
+	"github.com/docker/docker-credential-helpers/credentials"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/docker/notary"
 	notaryclient "github.com/docker/notary/client"
@@ -29,7 +30,6 @@ import (
 	"github.com/docker/notary/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/docker/docker-credential-helpers/credentials"
 )
 
 var cmdTUFListTemplate = usageTemplate{
@@ -725,8 +725,6 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 		if err == nil {
 			username := gotCredentials.Username
 			password := gotCredentials.Secret
-			fmt.Println("Using credentials for", u.String(), "from your native credentials storage")
-			fmt.Print(username, ": ", password)
 			return username, password
 		}
 	}
@@ -749,15 +747,6 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 		return "", ""
 	}
 	password := strings.TrimSpace(string(passphrase))
-
-	// store these credentials in the native keychain
-	keyCredentials := credentials.Credentials{
-		ServerURL: u.String(),
-		Username: username,
-		Secret:   password,
-	}
-	b, err := json.Marshal(keyCredentials)
-	err = credentials.Store(helper, bytes.NewReader(b))
 
 	return username, password
 }
@@ -949,11 +938,6 @@ func (a *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 		// Stop when request is authorized/unknown error
 		if resp.StatusCode != http.StatusUnauthorized {
-			fmt.Println("authorized :)")
-			fmt.Println("here is where you should be saving creds but they seem to not be in any of: ")
-			fmt.Println(req)
-			fmt.Println(resp)
-			fmt.Println(a)
 			return resp, nil
 		}
 	}

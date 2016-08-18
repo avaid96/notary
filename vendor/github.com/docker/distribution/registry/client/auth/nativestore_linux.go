@@ -1,4 +1,4 @@
-package main
+package auth
 
 import "github.com/docker/docker-credential-helpers/secretservice"
 

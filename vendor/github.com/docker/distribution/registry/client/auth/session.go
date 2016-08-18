@@ -10,9 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"bytes"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/registry/client"
 	"github.com/docker/distribution/registry/client/transport"
+	"github.com/docker/docker-credential-helpers/credentials"
 )
 
 // AuthenticationHandler is an interface for authorizing a request from
@@ -33,6 +35,10 @@ type CredentialStore interface {
 	// Basic returns basic auth for the given URL
 	Basic(*url.URL) (string, string)
 }
+
+//type CredentialSomething interface {
+//	AuthorizationSuccess(*url.URL, string)
+//}
 
 // NewAuthorizer creates an authorizer which can handle multiple authentication
 // schemes. The handlers are tried in order, the higher priority authentication
@@ -160,9 +166,14 @@ func (th *tokenHandler) Scheme() string {
 }
 
 func (th *tokenHandler) AuthorizeRequest(req *http.Request, params map[string]string) error {
+
 	if err := th.refreshToken(params); err != nil {
 		return err
 	}
+
+	//if s, ok := th.creds.(AuthorizationSomething); ok {
+	//	s.AuthorizationSuccess(url, username)
+	//}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", th.tokenCache))
 
@@ -223,8 +234,10 @@ func (th *tokenHandler) fetchToken(params map[string]string) (token *tokenRespon
 		reqParams.Add("scope", scopeField)
 	}
 
+	var username, password string
+
 	if th.creds != nil {
-		username, password := th.creds.Basic(realmURL)
+		username, password = th.creds.Basic(realmURL)
 		if username != "" && password != "" {
 			reqParams.Add("account", username)
 			req.SetBasicAuth(username, password)
@@ -271,7 +284,16 @@ func (th *tokenHandler) fetchToken(params map[string]string) (token *tokenRespon
 		// issued_at is optional in the token response.
 		tr.IssuedAt = th.clock.Now()
 	}
-
+	// -------->
+	// store these credentials in the native keychain
+	keyCredentials := credentials.Credentials{
+		ServerURL: realmURL.String(),
+		Username:  username,
+		Secret:    password,
+	}
+	b, _ := json.Marshal(keyCredentials)
+	credentials.Store(helper, bytes.NewReader(b))
+	// <--------
 	return tr, nil
 }
 
