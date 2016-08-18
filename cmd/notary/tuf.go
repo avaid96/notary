@@ -725,7 +725,8 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 		if err == nil {
 			username := gotCredentials.Username
 			password := gotCredentials.Secret
-			fmt.Println(username, ": ", password)
+			fmt.Println("Using credentials for", u.String(), "from your native credentials storage")
+			fmt.Print(username, ": ", password)
 			return username, password
 		}
 	}
@@ -749,7 +750,7 @@ func (ps passwordStore) Basic(u *url.URL) (string, string) {
 	}
 	password := strings.TrimSpace(string(passphrase))
 
-	// store these credentials
+	// store these credentials in the native keychain
 	keyCredentials := credentials.Credentials{
 		ServerURL: u.String(),
 		Username: username,
@@ -948,6 +949,11 @@ func (a *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 		// Stop when request is authorized/unknown error
 		if resp.StatusCode != http.StatusUnauthorized {
+			fmt.Println("authorized :)")
+			fmt.Println("here is where you should be saving creds but they seem to not be in any of: ")
+			fmt.Println(req)
+			fmt.Println(resp)
+			fmt.Println(a)
 			return resp, nil
 		}
 	}
